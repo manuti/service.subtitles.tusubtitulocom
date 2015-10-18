@@ -55,14 +55,14 @@ def getsearchstring(tvshow, season, episode, level):
             else:
                 return None, None, None, None
 
-	if level == 2:
+	elif level == 2:
             if '(' in tvshow or ')' in tvshow:
 	        # Series name like "Shameless (*)" -> "Shameless"
 	        tvshow = re.sub(r'\s\([^)]*\)', '', tvshow)
             else:
                 return None, None, None, None
 
-        if level == 3:
+        elif level == 3:
             if "'" in tvshow:
                 tvshow = tvshow.replace("'", '')
             else:
