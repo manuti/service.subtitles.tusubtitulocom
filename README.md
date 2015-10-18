@@ -1,3 +1,3 @@
 service.subtitles.tusubtitulocom
 ==============================
-tusubtitulo.com subtitle service plugin for XBMC
+tusubtitulo.com subtitle service plugin for XBMC/Kodi

@@ -20,6 +20,7 @@ import re
 import shutil
 import unicodedata
 import urllib2
+import urlparse
 
 __addon__ = xbmcaddon.Addon()
 __author__     = __addon__.getAddonInfo('author')
@@ -41,9 +42,10 @@ from tusubtitulo import search_tvshow, log
 
 """ Called when searching for subtitles from XBMC """
 def Search(item):
-	subs = search_tvshow(item['tvshow'], item['season'], item['episode'], item['2let_language'], item['file_original_path'])
-	for sub in subs:
-		append_subtitle(sub)
+    log(__name__, item)
+    subs = search_tvshow(item['tvshow'], item['season'], item['episode'], item['2let_language'], item['file_original_path'])
+    for sub in subs:
+        append_subtitle(sub)
 
 def append_subtitle(item):
     listitem = xbmcgui.ListItem(label=item['language_name'],  label2=item['filename'], iconImage=item['rating'], thumbnailImage=item['lang'])
@@ -53,32 +55,30 @@ def append_subtitle(item):
 
     ## below arguments are optional, it can be used to pass any info needed in download function
     ## anything after "action=download&" will be sent to addon once user clicks listed subtitle to downlaod
-    url = "plugin://%s/?action=download&link=%s&filename=%s&referer=%s" % (__scriptid__, item['link'], item['filename'], item['referer'])
+    url = "plugin://%s/?action=download&link=%s&filename=%s" % (__scriptid__, item['link'], item['filename'])
 
     ## add it to list, this can be done as many times as needed for all subtitles found
     xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=url, listitem=listitem, isFolder=False)
 
 """ Called when subtitle download request from XBMC """
-def Download(link, filename, referer):
+def Download(link, filename):
     subtitle_list = []
-    exts = [".srt", ".sub", ".txt", ".smi", ".ssa", ".ass"]
 
     if link:
         downloadlink = link
         log(__name__, "Downloadlink %s" % link)
 
         class MyOpener(urllib.FancyURLopener):
-            version = "Mozilla/5.0 (X11; Linux x86_64; rv:41.0) Gecko/20100101 Firefox/41.0"
+            version = "Mozilla/5.0 (compatible, MSIE 11, Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko"
 
         my_urlopener = MyOpener()
-        my_urlopener.addheader('Referer', referer)
+        my_urlopener.addheader('Referer', link)
         postparams = None
-        
-        
-        log(__name__, "Fetching subtitles using url '%s' with referer header '%s' and post parameters '%s'" % (link, referer, postparams))
+
+        log(__name__, "Fetching subtitles using url '%s' with referer header '%s' and post parameters '%s'" % (link, link, postparams))
         response = my_urlopener.open(link, postparams)
         local_tmp_file = os.path.join(__temp__, "sub.srt")
-        
+
         if xbmcvfs.exists(__temp__):
             shutil.rmtree(__temp__)
         xbmcvfs.mkdirs(__temp__)
@@ -87,7 +87,7 @@ def Download(link, filename, referer):
             local_file_handle = open(local_tmp_file, "wb")
             local_file_handle.write(response.read())
             local_file_handle.close()
-            
+
             subtitle_list.append(local_tmp_file)
             log(__name__, "=== returning subtitle file %s" % file)
 
@@ -98,26 +98,12 @@ def Download(link, filename, referer):
 
 """ Get parameters from XBMC and launch actions """
 def normalizeString(str):
-  return unicodedata.normalize(
-         'NFKD', unicode(unicode(str, 'utf-8'))
-         ).encode('ascii','ignore')    
+  return unicodedata.normalize('NFKD', unicode(unicode(str, 'utf-8'))).encode('ascii','ignore')    
  
 def get_params():
-  param=[]
-  paramstring=sys.argv[2]
-  if len(paramstring)>=2:
-    params=paramstring
-    cleanedparams=params.replace('?','')
-    if (params[len(params)-1]=='/'):
-      params=params[0:len(params)-2]
-    pairsofparams=cleanedparams.split('&')
-    param={}
-    for i in range(len(pairsofparams)):
-      splitparams={}
-      splitparams=pairsofparams[i].split('=')
-      if (len(splitparams))==2:
-        param[splitparams[0]]=splitparams[1]
-                                
+  param = {}
+  if len(sys.argv[2]) > 1:
+      param = dict(urlparse.parse_qsl(sys.argv[2][1:]))
   return param
 
 params = get_params()
@@ -173,6 +159,8 @@ if params['action'] == 'search':
     # split title in tvshow, season and episode
     if mo:
       item['tvshow'] = mo.group(1)
+      if item['tvshow'].endswith(' - '):
+          item['tvshow'] = item['tvshow'][:-3]
       item['season'] = mo.group(2)
       item['episode'] = mo.group(3)
       log(__name__, "item %s" % item)
@@ -184,7 +172,7 @@ if params['action'] == 'search':
 elif params['action'] == 'download':
   log(__name__, params)
   ## we pickup all our arguments sent from def Search()
-  subs = Download(params["link"],params["filename"],params['referer'])
+  subs = Download(params["link"],params["filename"])
   ## we can return more than one subtitle for multi CD versions, for now we are still working out how to handle that in XBMC core
   for sub in subs:
     listitem = xbmcgui.ListItem(label=sub)
