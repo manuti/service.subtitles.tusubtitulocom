@@ -1,13 +1,5 @@
 # -*- coding: utf-8 -*- 
 
-"""
-This addon is a modification of quillo86's addon for XBMC Frodo, adapted to Gotham using
-manacker's service.subtitles.subscene as base code
-
-Original code by quillo86 (https://github.com/quillo86) and manacker (https://github.com/manacker)
-Adaptation by infinito (https://github.com/infinicode)
-"""
-
 import os
 import sys
 import xbmc
@@ -19,7 +11,6 @@ import xbmcplugin
 import re
 import shutil
 import unicodedata
-import urllib2
 import urlparse
 
 __addon__ = xbmcaddon.Addon()
@@ -38,73 +29,62 @@ sys.path.append (__resource__)
 
 from tusubtitulo import search_tvshow, log
 
-
-
 """ Called when searching for subtitles from XBMC """
 def Search(item):
     log(__name__, item)
-    subs = search_tvshow(item['tvshow'], item['season'], item['episode'], item['2let_language'], item['file_original_path'])
+    subs = search_tvshow(item['tvshow'], item['season'], item['episode'], item['2let_language'])
     for sub in subs:
         append_subtitle(sub)
 
 def append_subtitle(item):
-    listitem = xbmcgui.ListItem(label=item['language_name'],  label2=item['filename'], iconImage=item['rating'], thumbnailImage=item['lang'])
-
-    listitem.setProperty("sync",  'true' if item["sync"] else 'false')
-    listitem.setProperty("hearing_imp", 'true' if item["hearing_imp"] else 'false')
-
-    ## below arguments are optional, it can be used to pass any info needed in download function
-    ## anything after "action=download&" will be sent to addon once user clicks listed subtitle to downlaod
-    url = "plugin://%s/?action=download&link=%s&filename=%s" % (__scriptid__, item['link'], item['filename'])
-
-    ## add it to list, this can be done as many times as needed for all subtitles found
+    listitem = xbmcgui.ListItem(label=item['lang'],  label2=item['filename'], thumbnailImage=item['flag'])
+    url = "plugin://%s/?action=download&link=%s&filename=%s&referer=%s" % (__scriptid__, item['link'], item['filename'].decode('utf-8'), item['referer'])
     xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=url, listitem=listitem, isFolder=False)
 
-""" Called when subtitle download request from XBMC """
-def Download(link, filename):
+def Download(link, filename, referer):
     subtitle_list = []
+    if not link:
+       return subtitle_list
 
-    if link:
-        downloadlink = link
-        log(__name__, "Downloadlink %s" % link)
+    log(__name__, "Downloadlink %s" % link)
 
-        class MyOpener(urllib.FancyURLopener):
-            version = "Mozilla/5.0 (compatible, MSIE 11, Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko"
+    class MyOpener(urllib.FancyURLopener):
+        version = "Mozilla/5.0 (compatible, MSIE 11, Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko"
 
-        my_urlopener = MyOpener()
-        my_urlopener.addheader('Referer', link)
-        postparams = None
+    my_urlopener = MyOpener()
+    my_urlopener.addheader('Referer', referer)
+    postparams = None
 
-        log(__name__, "Fetching subtitles using url '%s' with referer header '%s' and post parameters '%s'" % (link, link, postparams))
-        response = my_urlopener.open(link, postparams)
-        local_tmp_file = os.path.join(__temp__, "sub.srt")
+    log(__name__, "Fetching subtitles using url '%s' with referer header '%s' and post parameters '%s'" % (link, link, postparams))
+    response = my_urlopener.open(link, postparams)
+    local_tmp_file = os.path.join(__temp__, "sub.srt")
 
-        if xbmcvfs.exists(__temp__):
-            shutil.rmtree(__temp__)
-        xbmcvfs.mkdirs(__temp__)
-        try:
-            log(__name__, "Saving subtitles to '%s'" % local_tmp_file)
-            local_file_handle = open(local_tmp_file, "wb")
-            local_file_handle.write(response.read())
-            local_file_handle.close()
+    if xbmcvfs.exists(__temp__):
+        shutil.rmtree(__temp__)
+    xbmcvfs.mkdirs(__temp__)
+    try:
+        log(__name__, "Saving subtitles to '%s'" % local_tmp_file)
+        local_file_handle = open(local_tmp_file, "wb")
+        local_file_handle.write(response.read())
+        local_file_handle.close()
 
-            subtitle_list.append(local_tmp_file)
-            log(__name__, "=== returning subtitle file %s" % file)
+        subtitle_list.append(local_tmp_file)
+        log(__name__, "=== returning subtitle file %s" % file)
 
-        except:
-            log(__name__, "Failed to save subtitle to %s" % local_tmp_file)
+    except:
+        log(__name__, "Failed to save subtitle to %s" % local_tmp_file)
 
     return subtitle_list
 
-""" Get parameters from XBMC and launch actions """
 def normalizeString(str):
-  return unicodedata.normalize('NFKD', unicode(unicode(str, 'utf-8'))).encode('ascii','ignore')    
+  return unicodedata.normalize('NFKD', unicode(unicode(str, 'utf-8'))).encode('ascii','ignore')
  
 def get_params():
   param = {}
   if len(sys.argv[2]) > 1:
       param = dict(urlparse.parse_qsl(sys.argv[2][1:]))
   return param
+
 
 params = get_params()
 
@@ -120,18 +100,18 @@ if params['action'] == 'search':
   item['file_original_path'] = urllib.unquote(xbmc.Player().getPlayingFile().decode('utf-8'))  # Full path of a playing file
   item['3let_language']      = []
   item['2let_language']      = []
-  
+
   for lang in urllib.unquote(params['languages']).decode('utf-8').split(","):
     item['3let_language'].append(xbmc.convertLanguage(lang,xbmc.ISO_639_2))
     item['2let_language'].append(xbmc.convertLanguage(lang,xbmc.ISO_639_1))
-  
+
   if item['title'] == "":
     item['title']  = normalizeString(xbmc.getInfoLabel("VideoPlayer.Title"))      # no original title, get just Title
-    
+
   if item['episode'].lower().find("s") > -1:                                      # Check if season is "Special"
     item['season'] = "0"                                                          #
     item['episode'] = item['episode'][-1:]
-  
+
   if ( item['file_original_path'].find("http") > -1 ):
     item['temp'] = True
 
@@ -144,7 +124,7 @@ if params['action'] == 'search':
     item['file_original_path'] = stackPath[0][8:]
 
   # required if tvshow is not indexed/recognized in library
-  if item['tvshow'] == "":  
+  if item['tvshow'] == "":
     log(__name__, "item %s" % item)
     # replace dots with spaces in title
     titulo = re.sub(r'\.', ' ', item['title'])
@@ -172,11 +152,11 @@ if params['action'] == 'search':
 elif params['action'] == 'download':
   log(__name__, params)
   ## we pickup all our arguments sent from def Search()
-  subs = Download(params["link"],params["filename"])
+  subs = Download(params["link"],params["filename"],params['referer'])
   ## we can return more than one subtitle for multi CD versions, for now we are still working out how to handle that in XBMC core
   for sub in subs:
     listitem = xbmcgui.ListItem(label=sub)
     xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=sub,listitem=listitem,isFolder=False)
-  
-  
+ 
+
 xbmcplugin.endOfDirectory(int(sys.argv[1])) ## send end of directory to XBMC
