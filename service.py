@@ -11,6 +11,7 @@ import xbmcplugin
 import re
 import shutil
 import unicodedata
+import urllib2
 import urlparse
 
 __addon__ = xbmcaddon.Addon()

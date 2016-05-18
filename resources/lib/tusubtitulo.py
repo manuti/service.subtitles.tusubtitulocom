@@ -18,17 +18,17 @@ def search_tvshow(tvshow, season, episode, languages):
         _tvshow, code = parsetvshow(tvshow, level)
         if code is None:
             level += 1
-    log(__name__, tvshow)
-    log(__name__, season)
-    log(__name__, episode)
-    log(__name__, languages)
+    #log(__name__, tvshow)
+    #log(__name__, season)
+    #log(__name__, episode)
+    #log(__name__, languages)
     searchstring = re.sub(r'\s', '-', _tvshow + '/' + season + '/' + episode)
     url = main_url + searchstring.lower() + '/' + code
     #log( __name__ ,"URL = %s" % (url))
     return getallsubsforurl(url, languages)
 
 def getcode(tvshow):
-    log(__name__, "CODE=%s" %(tvshow))
+    #log(__name__, "CODE=%s" %(tvshow))
     reg_code = '<a href="/show/([0-9]+)">'+tvshow+'</a>'
     content = geturl("http://www.tusubtitulo.com/series.php")
     result = re.findall(reg_code, content, re.IGNORECASE | re.DOTALL | re.MULTILINE | re.UNICODE)
@@ -43,6 +43,7 @@ def parsetvshow(tvshow, level):
     code = None
     if _tvshow is not None:
         code = getcode(_tvshow)
+    #log(__name__, code)
     return (_tvshow, code)
 
 def getallsubsforurl(url, langs):
@@ -51,23 +52,27 @@ def getallsubsforurl(url, langs):
     soup = BeautifulSoup(content)
     for versions in soup.findAll("div", {"class": "ssdiv", "id": re.compile('version[0-9]+')}):
         version = versions.find("p", {"class": "title-sub"})
+        #log(__name__, version)
         if version is None:
             continue
         version = version.text.split(',')[0]
-        log(__name__, version)
+        #log(__name__, version)
         for subtitulo in versions.findAll("ul", {"class":"sslist"}):
             idioma = subtitulo.findNext("li", {"class": "li-idioma"}).findNext("b").text
-            _idioma = languages.get(idioma, ("Unknown", "-", "???", 3))
-            enlace = subtitulo.findNext("li", {"class": "descargar green"})
-            if _idioma[1] not in langs or enlace is None:
+            #log(__name__, idioma)
+            enlace = subtitulo.findNext("li", {"class": "rng download green"})
+            if enlace is None:
                 continue
             enlace = enlace.findNext("a")["href"]
+            _idioma = languages.get(idioma, ("Unknown", "-", "???", 3))
+            if _idioma[1] not in langs:
+                continue
             filename = "{0}".format(version.encode('utf-8'))
             result.append({'filename': filename, 'flag': _idioma[2],
                            'link': "http://www.tusubtitulo.com/"+enlace, 
                            'lang': _idioma[0],'order': 1 + _idioma[3], 'referer': url})
     return result
 
-#if __name__ == "__main__":
-#    subs = search_tvshow("game of thrones", "6", "1", "es,en")
-#    for sub in subs: print sub['server'], sub['link']
+if __name__ == "__main__":
+    subs = search_tvshow("game of thrones", "6", "1", "es,en")
+    for sub in subs: print sub['server'], sub['link']

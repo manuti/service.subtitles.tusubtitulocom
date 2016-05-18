@@ -1,3 +1,9 @@
+0.0.4
+- adapt to new version of tusubtitulo.com
+
+0.0.3
+- BeautifulSoup, adapt to new version of tusubtitulo.com
+
 0.0.2
 - Code refactor, cleanup, optimization and tusubtitulo protection avoided (I think)
 
