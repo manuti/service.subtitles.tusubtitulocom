@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 import urllib
+import xbmc
 
 languages = {
     u"Español (España)": ("Spanish", "es", "es", 1),
     u"Español (Latinoamérica)": ("Latino", "es", "es", 2),
     u"English": ("English", "en", "en", 2),
 }
+
+def log(module, msg):
+    xbmc.log((u"### [%s] - %s" % (module,msg,)).encode('utf-8'), level=xbmc.LOGNOTICE)
 
 def geturl(url):
     class AppURLopener(urllib.FancyURLopener):

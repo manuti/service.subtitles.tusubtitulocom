@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import xbmc
 import re
-from utils import languages, geturl
+from utils import languages, geturl, log
 from BeautifulSoup import BeautifulSoup
 
 main_url = "http://www.tusubtitulo.com/serie/"
-
-def log(module, msg):
-    xbmc.log((u"### [%s] - %s" % (module,msg,)).encode('utf-8'), level=xbmc.LOGNOTICE)
 
 def search_tvshow(tvshow, season, episode, languages):
     #log(__name__,"TVSHOW = %s" % (tvshow))
@@ -63,7 +59,8 @@ def getallsubsforurl(url, langs):
             enlace = subtitulo.findNext("li", {"class": "rng download green"})
             if enlace is None:
                 continue
-            enlace = enlace.findNext("a")["href"]
+            enlace = enlace.findNext("a", {"class": None})["href"]
+            #log(__name__, enlace)
             _idioma = languages.get(idioma, ("Unknown", "-", "???", 3))
             if _idioma[1] not in langs:
                 continue

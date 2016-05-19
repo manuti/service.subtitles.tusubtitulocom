@@ -1,3 +1,6 @@
+0.0.5
+- adapt to new version of tusubtitulo.com
+
 0.0.4
 - adapt to new version of tusubtitulo.com
 

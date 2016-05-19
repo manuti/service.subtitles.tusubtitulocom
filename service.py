@@ -54,6 +54,7 @@ def Download(link, filename, referer):
 
     my_urlopener = MyOpener()
     my_urlopener.addheader('Referer', referer)
+    log(__name__, referer)
     postparams = None
 
     log(__name__, "Fetching subtitles using url '%s' with referer header '%s' and post parameters '%s'" % (link, link, postparams))
