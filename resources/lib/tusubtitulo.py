@@ -4,7 +4,7 @@ import re
 from utils import languages, geturl, log
 from BeautifulSoup import BeautifulSoup
 
-main_url = "http://www.tusubtitulo.com/serie/"
+main_url = "https://www.tusubtitulo.com/serie/"
 
 def search_tvshow(tvshow, season, episode, languages):
     #log(__name__,"TVSHOW = %s" % (tvshow))
@@ -26,7 +26,7 @@ def search_tvshow(tvshow, season, episode, languages):
 def getcode(tvshow):
     #log(__name__, "CODE=%s" %(tvshow))
     reg_code = '<a href="/show/([0-9]+)">'+tvshow+'</a>'
-    content = geturl("http://www.tusubtitulo.com/series.php")
+    content = geturl("https://www.tusubtitulo.com/series.php")
     result = re.findall(reg_code, content, re.IGNORECASE | re.DOTALL | re.MULTILINE | re.UNICODE)
     return result[0] if len(result) > 0 else None
 
@@ -66,7 +66,7 @@ def getallsubsforurl(url, langs):
                 continue
             filename = "{0}".format(version.encode('utf-8'))
             result.append({'filename': filename, 'flag': _idioma[2],
-                           'link': "http://www.tusubtitulo.com/"+enlace, 
+                           'link': "https://www.tusubtitulo.com/"+enlace, 
                            'lang': _idioma[0],'order': 1 + _idioma[3], 'referer': url})
     return result
 
