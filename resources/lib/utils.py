@@ -20,7 +20,7 @@ def geturl(url):
             if url:
                 urllib._urlopener.addheader('Referer', url)
     urllib._urlopener = AppURLopener()
-    urllib._urlopener.add_referrer("http://www.tusubtitulo.com/")
+    urllib._urlopener.add_referrer("https://www.tusubtitulo.com/")
     try:
         response = urllib._urlopener.open(url)
         content    = response.read()
